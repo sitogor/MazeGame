@@ -12,7 +12,7 @@ import cv2
 import time
 from pyfirmata import Arduino 
 
-board  = Arduino("/dev/cu.usbmodem101"  #Need to change to Arduino port 
+board  = Arduino("/dev/cu.usbmodem101")  #Need to change to Arduino port 
                  
 
 
