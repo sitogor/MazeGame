@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 
-path = "/Users/melvin/Documents/Summer '22 Work for Fun/Line Detection /Test Images /IMG_0309.jpeg"
+path = r"C:\Users\thoma\OneDrive\Documents\Maze_Project\Image.jpg"
 
 # Open image file
 image = Image.open(path)
@@ -27,7 +27,7 @@ ax=fig.add_subplot(111)
 fig.subplots_adjust(left=0,right=1,bottom=0,top=1)
 
 # Set the gridding interval: here we use the major tick interval
-myInterval=15.
+myInterval=15
 loc = plticker.MultipleLocator(base=myInterval)
 ax.xaxis.set_major_locator(loc)
 ax.yaxis.set_major_locator(loc)
@@ -107,6 +107,7 @@ for contour in contours:
 
 
 Grids = [*set(Grids)]
+Grids_1 = Grids
 print(Grids)
 print(len(Grids))
 
@@ -118,3 +119,30 @@ image = cv2.drawContours(image, contours, -1, (0, 255, 0), 2)
 plt.imshow(image)
 
 plt.show()
+
+
+print (gridrange)
+Grids = Grids_1
+size = 6
+tot = []
+def path_det(Grid_num):
+    if (Grid_num+1) in Grids_1:
+        direction = ['R', Grid_num]
+        # Grids_1.remove(Grid_num)
+    elif (Grid_num+size) in Grids_1:
+        direction  = ['D', Grid_num]
+        # Grids_1.remove(Grid_num)
+    elif (Grid_num - 1) in Grids_1:
+        direction = ['L', Grid_num]
+        # Grids_1.remove(Grid_num)
+    elif (Grid_num - size) in Grids_1:
+        direction = ['U', Grid_num]
+        # Grids_1.remove(Grid_num)
+    else:
+        direction = ('error')
+    return direction
+
+for x in range(len(Grids)):
+    maze = path_det(Grids[x])
+    tot.append(maze)
+print (tot)
