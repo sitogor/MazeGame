@@ -31,9 +31,8 @@ fontColor              = (255,255,255)
 thickness              = 3
 lineType               = 2
 
-
-
-## function to add grids and get the gridrange
+##### FUNCTIONS 
+## function to grids and get the gridrange
 
 def gridoverlay():
     global frame 
@@ -71,7 +70,26 @@ def gridoverlay():
         centrey[k] = [(centrey[k]-(myInterval/2)), (centrey[k]+(myInterval/2))]
         gridrange.append([(centrex[k]),centrey[k]])
 
-gridoverlay()
+
+
+######## FUNCTION TO INDENTIFY THE GRIDNUMBER RELATING TO MAZE OR BALL 
+
+def grid_detection(): 
+    global grid
+    for s in gridrange:
+        xrange = s[0] 
+        yrange = s[1]
+
+
+        if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
+            grid = gridrange.index(s)
+            Grids.append(grid)
+
+###########
+
+
+
+gridoverlay()       # Apply the grids to the image and obtain the gridrange
 
 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -90,16 +108,6 @@ closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
 
 # find contours in the binary image
 cnts, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-def grid_detection(): 
-    global grid
-    for s in gridrange:
-        xrange = s[0] 
-        yrange = s[1]
-
-        if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
-            grid = gridrange.index(s)
-            Grids.append(grid)
 
 for cnt in cnts:
     area = cv2.contourArea(cnt)
@@ -130,7 +138,7 @@ vs = VideoStream(src=0).start()
 ap = argparse.ArgumentParser()
 
 ap.add_argument("-b", "--buffer", type=int, default=64,
-	help="max buffer size")
+    help="max buffer size")
 args = vars(ap.parse_args())
 
 
@@ -141,11 +149,11 @@ while True:
     gridrange=[] #Gives the x,y range for each grid 
     contour_coord = []
     
-	# grab the current frame
+    # grab the current frame
     frame = vs.read()
     
 
-	# handle the frame from VideoCapture or VideoStream
+    # handle the frame from VideoCapture or VideoStream
     frame = frame[1] if args.get("video", False) else frame
 
     gridoverlay()
@@ -199,8 +207,8 @@ while True:
 
 
 
-    if radius < 50:
-        [print("No ball is detected")]
+    else: #if radius < 50:
+        print("No ball is detected")
 
 
     # show the frame to our screen
