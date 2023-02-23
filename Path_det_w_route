@@ -13,15 +13,17 @@ time.sleep(1)
 ret,frame = cap.read() # return a single frame in variable `frame`
 
 
-lower_blue = (90,60,0)
-upper_blue =(121,255,255)
-lower_red = np.array([0,100,100])
+
+lower_red = np.array([0,100,95])
+# lower_red = np.array([0,100,80]) ## modified 
 upper_red = np.array([7,255,255])
 lower_blue = np.array([100, 50, 50])
 upper_blue = np.array([130, 255, 255])
-greenLower = (29, 86, 6)
-greenUpper = (64, 255, 255)
-myInterval = 100.
+# greenLower = (29, 86, 6)  ## Original
+greenUpper = (64, 255, 255)     ## Original 
+greenLower  = 26,103,104
+# greenUpper  = 90,174,133
+myInterval =100.
 Grids =[]
 centrex = [] #Gives the x range for each grid 
 centrey = [] #Gives the y range for each grid 
@@ -30,7 +32,7 @@ contour_coord = []
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 fontScale              = 1
 fontColor              = (255,255,255)
-thickness              = 3
+thickness              = 2
 lineType               = 2
 
 ##### FUNCTIONS 
@@ -38,6 +40,7 @@ lineType               = 2
 
 def gridoverlay():
     global frame 
+    global ny
 
     frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
 
@@ -49,6 +52,7 @@ def gridoverlay():
 
     nx = int(frame.shape[0]/myInterval)
     ny = int(frame.shape[1]/myInterval)
+
 
     for j in range(ny):
         y=(myInterval/2+j*myInterval)
@@ -87,7 +91,8 @@ def grid_detection():
             grid = gridrange.index(s)
             Grids.append(grid)
 
-###########
+########### PATH DETECTION 
+
 
 
 
@@ -128,19 +133,19 @@ print("Path Grids are: ",Grids)
 print("Number of grids  = ",len(Grids))
 
 Grids_1 = Grids
-size = 10
+size = ny 
 tot = {}
-def path_det(Grid_num):
-    if (Grid_num+1) in Grids_1:
+def path_det(Grid_num, mul):
+    if (Grid_num+1*mul) in Grids_1:
         direction = 'R'
         # Grids_1.remove(Grid_num)
-    elif (Grid_num+size) in Grids_1:
+    elif (Grid_num+size*mul) in Grids_1:
         direction  = 'D'
         # Grids_1.remove(Grid_num)
-    elif (Grid_num - 1) in Grids_1:
+    elif (Grid_num - 1*mul) in Grids_1:
         direction = 'L'
         # Grids_1.remove(Grid_num)
-    elif (Grid_num - size) in Grids_1:
+    elif (Grid_num - size*mul) in Grids_1:
         direction = 'U'
         # Grids_1.remove(Grid_num)
     else:
@@ -149,10 +154,10 @@ def path_det(Grid_num):
 
 
 for x in range(len(Grids)):
-    maze = path_det(Grids[x])
+    maze = path_det(Grids[x],1)
     tot[Grids[x]] = maze
-print (tot)
 
+print (tot)
 
 
 cv2.imshow('img1',frame) #display the captured image
@@ -220,7 +225,7 @@ while True:
         
 
         # only proceed if the radius meets a minimum size
-        if radius > 50:         ### was originally 10
+        if radius > 10:         ### was originally 15
             # draw the circle and centroid on the frame,
             # then update the list of tracked points
             cv2.circle(frame, (int(x), int(y)), int(radius),
@@ -232,12 +237,22 @@ while True:
             contour_coord.append([contourx,contoury])
 
             grid_detection()
-            print(grid)
+
+            try: 
+                print(tot[grid])
+            except:
+                x=2
+                while x<10:
+                    out = path_det(grid,x)
+                    if out != 'error':
+                        break
+                    x+=1
 
 
 
-    else: #if radius < 50:
-        print("No ball is detected")
+        else: #if radius < 50:
+            print("No ball is detected")
+            print("Radius is: ", radius)
 
 
     # show the frame to our screen
