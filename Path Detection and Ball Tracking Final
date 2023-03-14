@@ -6,20 +6,29 @@ import numpy as np
 import argparse
 import cv2
 import time
-
+import matplotlib.ticker as plticker
+import matplotlib.pyplot as plt
 
 cap = cv2.VideoCapture(0) # video capture source camera (Here webcam of laptop) 
 time.sleep(1)
 ret,frame = cap.read() # return a single frame in variable `frame`
 
 
-lower_blue = (90,60,0)
-upper_blue =(121,255,255)
+
+lower_red = np.array([0,100,95])
+# lower_red = np.array([0,100,80]) ## modified 
+upper_red = np.array([7,255,255])
+
+## Trial 
+
+
 lower_blue = np.array([100, 50, 50])
 upper_blue = np.array([130, 255, 255])
-greenLower = (29, 86, 6)
-greenUpper = (64, 255, 255)
-myInterval = 100.
+# greenLower = (29, 86, 6)  ## Original
+greenUpper = (64, 255, 255)     ## Original 
+greenLower  = 26,103,104
+# greenUpper  = 90,174,133
+myInterval = 80
 Grids =[]
 centrex = [] #Gives the x range for each grid 
 centrey = [] #Gives the y range for each grid 
@@ -28,14 +37,15 @@ contour_coord = []
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 fontScale              = 1
 fontColor              = (255,255,255)
-thickness              = 3
+thickness              = 2
 lineType               = 2
 
 ##### FUNCTIONS 
-## function to grids and get the gridrange
+## function to overlay grids and get the gridrange which gives the boundry values for each grid. 
 
 def gridoverlay():
     global frame 
+    global ny
 
     frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
 
@@ -47,6 +57,7 @@ def gridoverlay():
 
     nx = int(frame.shape[0]/myInterval)
     ny = int(frame.shape[1]/myInterval)
+
 
     for j in range(ny):
         y=(myInterval/2+j*myInterval)
@@ -83,10 +94,12 @@ def grid_detection():
 
         if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
             grid = gridrange.index(s)
-            Grids.append(grid)
+            # Grids.append(grid)
 
-###########
+### END of functions 
 
+
+########### PATH DETECTION 
 
 
 gridoverlay()       # Apply the grids to the image and obtain the gridrange
@@ -99,7 +112,7 @@ upper_blue = np.array([130, 255, 255])
 
 
 # threshold the image to extract blue regions
-mask = cv2.inRange(hsv, lower_blue, upper_blue)
+mask = cv2.inRange(hsv, lower_red, upper_red)
 
 # apply morphological transformations to remove noise
 kernel = np.ones((5, 5), np.uint8)
@@ -111,13 +124,15 @@ cnts, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_
 
 for cnt in cnts:
     area = cv2.contourArea(cnt)
-    if area > 1000:
+    if area > 100:
         cv2.drawContours(frame, [cnt], 0, (0, 255, 0), 2)
         for i in cnt:
             contourx, contoury = i[0]
             contour_coord.append([contourx,contoury])
 
             grid_detection()
+            Grids.append(grid)
+
     
 
 Grids = [*set(Grids)]
@@ -125,21 +140,127 @@ Grids.sort()
 print("Path Grids are: ",Grids)    
 print("Number of grids  = ",len(Grids))
 
+### Toms code which needs further correction/hardcoding. 
 
-cv2.imshow('img1',frame) #display the captured image
-cv2.waitKey()
+# start = 18
+# end = 76
+# size = ny ##  change to ny 
+# tot = {}
+# def path_det(Grid_num, start,end):
+# #    print(Grid_num)
+#     direction =[]
+#     if (Grid_num+1) in Grids:
+#         direction.append(Grid_num+1)
+#         # Grids_1.remove(Grid_num)
+#     if (Grid_num+size) in Grids:
+#         direction.append(Grid_num+size)
+#         # Grids_1.remove(Grid_num)
+#     if (Grid_num - 1) in Grids:
+#         direction.append(Grid_num-1)
+#         # Grids_1.remove(Grid_num)
+#     if (Grid_num - size) in Grids:
+#         direction.append(Grid_num-size)
+#     if len(direction)==0 or Grid_num==end:
+#         direction = [start]
+#     #Grids_1.remove(Grid_num)
+
+#     return direction
+
+
+# # making a list of the removable items in the list
+# def remove_func():
+#     remove_list =[]
+#     for y in Grids:
+#         if len(tot[y])==1:
+#     #            print(y,tot[y], len(tot[y]))
+#                 remove_list.append(tot[y][0])
+#     return remove_list
+
+
+# #removing possible directions to blocks if another block can only move to that block 
+# def route_recog(new_tot,remove_ls):
+#     for u in Grids:
+#         if len(new_tot[u])>1:
+#     #        print(tot[u])
+#             for x in remove_ls:
+#                 if x in new_tot[u]:
+#                     new_tot[u].remove(x)
+#     return(new_tot)
+
+
+# # removing all the not possible routes where the ball could be stuck between 2 grids, input of the newest tot dictionary
+# def not_poss(new_tot):
+#     # key_list = list(new_tot.keys())
+#     # print(key_list)
+#     for y in Grids:
+#         if len(new_tot[y])==1:
+#             g = new_tot[y][0]
+#             if y in new_tot[g]:
+#                 new_tot[g].remove(y)
+#     return(new_tot)
+
+
+# # getting the final dictionary and working out the direction the ball has to take once in a certain grid
+# def directions(tot_final,size):
+#     final_route={}
+#     # turning single value lists into just the integers
+#     for x in Grids:
+#         tot_final.update({x:tot_final[x][0]})
+#     #getting directions for each grid number
+#     for x in Grids:
+#         if x==tot_final[x]+1:
+#             direction = 'l'
+#         elif x==tot_final[x]-1:
+#             direction = 'r'
+#         elif x==tot_final[x]+size:
+#             direction = 'u'
+#         elif x==tot_final[x]-size:
+#             direction = 'd'
+#         else:
+#             direction = 'end'
+#         final_route[x]=direction
+#     return final_route
+
+
+# # rem = remove_func()
+# # print(rem)
+# for x in range(len(Grids)):
+#     maze = path_det(Grids[x],start,end)
+#     tot[Grids[x]] = maze
+# # print (tot)
+# finished =False
+
+# fin=0
+# while finished ==False:
+#     list_len=0
+#     for x in Grids:
+#         list_len+=len(tot[x])
+#     if list_len==len(tot):
+#         print(directions(tot,size))
+#         finished = True
+#     elif fin==10:
+#         finished = True
+#     else:
+#         rem=remove_func()
+#         tot=route_recog(tot,rem)
+#         tot=not_poss(tot)
+#         print(tot)
+#         fin+=1
+#         finished = False
+
+
+
+# cv2.imshow('img1',frame) #display the captured image
+# cv2.waitKey()
+frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+plt.imshow(frame)
+plt.show()
 
 
 ########################################################
 #### BALL DETECTION ############
 
-vs = VideoStream(src=0).start()
-
-ap = argparse.ArgumentParser()
-
-ap.add_argument("-b", "--buffer", type=int, default=64,
-    help="max buffer size")
-args = vars(ap.parse_args())
+vs = cv2.VideoCapture(0)
 
 
 # keep looping
@@ -150,11 +271,11 @@ while True:
     contour_coord = []
     
     # grab the current frame
-    frame = vs.read()
+    ret, frame = vs.read()
+
     
 
     # handle the frame from VideoCapture or VideoStream
-    frame = frame[1] if args.get("video", False) else frame
 
     gridoverlay()
 
@@ -191,7 +312,7 @@ while True:
         
 
         # only proceed if the radius meets a minimum size
-        if radius > 50:         ### was originally 10
+        if radius > 5:         ### was originally 15
             # draw the circle and centroid on the frame,
             # then update the list of tracked points
             cv2.circle(frame, (int(x), int(y)), int(radius),
@@ -206,27 +327,24 @@ while True:
             print(grid)
 
 
-
-    else: #if radius < 50:
-        print("No ball is detected")
+        else: #if radius < 50:
+            print("No ball is detected")
+            print("Radius is: ", radius)
 
 
     # show the frame to our screen
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
+    
 
 
     # if the 'q' key is pressed, stop the loop
     if key == ord("q"):
         break
 
-    # if we are not using a video file, stop the camera video stream
-if not args.get("video", False):
-    vs.stop()
-
-# otherwise, release the camera
-else:
-    vs.release()
+    
+vs.release()
 
 # close all windows
 cv2.destroyAllWindows()
+
