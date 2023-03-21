@@ -33,7 +33,6 @@ dict_from_csv = {}
 with open('route_csv_formatted(final).csv', mode='r') as inp:
     reader = csv.reader(inp)
     dict_from_csv = {rows[0]:rows[1] for rows in reader}
-    
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 
@@ -191,6 +190,7 @@ while True:
             for s in gridrange:
                 xrange = s[0] 
                 yrange = s[1]
+                return_dic = {'r':'l','l':'r','u':'d','d':'u'}
 
                 if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
                     grid = gridrange.index(s)
@@ -205,7 +205,8 @@ while True:
                     # print("recieved data:", data)
                         Grids.append(grid)
                     except:
-                        Tx.send(b'nan'.encode())
+                        return_direc = return_dic[x]
+                        Tx.send(return_direc.encode())
                     # counter += 1 
                     # print(counter)
 
