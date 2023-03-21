@@ -7,16 +7,72 @@ from PIL import Image, ImageTk
 fileName = os.environ['ALLUSERSPROFILE'] + "\WebcamCap.txt"
 cancel = False
 
+# ***** VARIABLES *****
+# use a boolean variable to help control state of time (running or not running)
+running = False
+# time variables initially set to 0
+hours, minutes, seconds = 0, 0, 0
+
+# ***** NOTES ON GLOBAL *****
+# global will be used to modify variables outside functions
+# another option would be to use a class and subclass Frame
+
+# ***** FUNCTIONS *****
+# start, pause, and reset functions will be called when the buttons are clicked
+# start function
+def start():
+    global running
+    if not running:
+        update()
+        running = True
+
+# pause function
+def pause():
+    global running
+    if running:
+        # cancel updating of time using after_cancel()
+        stopwatch_label.after_cancel(update_time)
+        running = False
+
+# reset function
+def reset():
+    global running
+    if running:
+        # cancel updating of time using after_cancel()
+        stopwatch_label.after_cancel(update_time)
+        running = False
+    # set variables back to zero
+    global hours, minutes, seconds
+    hours, minutes, seconds = 0, 0, 0
+    # set label back to zero
+    stopwatch_label.config(text='00:00:00')
+
+# update stopwatch function
+def update():
+    # update seconds with (addition) compound assignment operator
+    global hours, minutes, seconds
+    seconds += 1
+    if seconds == 60:
+        minutes += 1
+        seconds = 0
+    if minutes == 60:
+        hours += 1
+        minutes = 0
+    # format time to include leading zeros
+    hours_string = f'{hours}' if hours > 9 else f'0{hours}'
+    minutes_string = f'{minutes}' if minutes > 9 else f'0{minutes}'
+    seconds_string = f'{seconds}' if seconds > 9 else f'0{seconds}'
+    # update timer label after 1000 ms (1 second)
+    stopwatch_label.config(text=hours_string + ':' + minutes_string + ':' + seconds_string)
+    # after each second (1000 milliseconds), call update function
+    # use update_time variable to cancel or pause the time using after_cancel
+    global update_time
+    update_time = stopwatch_label.after(1000, update)
+
 def prompt_ok(event = 0):
-    global cancel, button, button1, button2
+    global cancel
     cancel = True
 
-    button.place_forget()
-    button1 = tk.Button(mainWindow, text="Good Image!", command=saveAndExit)
-    button2 = tk.Button(mainWindow, text="Try Again", command=resume)
-    button1.place(anchor=tk.CENTER, relx=0.2, rely=0.9, width=150, height=50)
-    button2.place(anchor=tk.CENTER, relx=0.8, rely=0.9, width=150, height=50)
-    button1.focus()
 
 def saveAndExit(event = 0):
     global prevImg
@@ -28,30 +84,30 @@ def saveAndExit(event = 0):
 
     print ("Output file to: " + filepath)
     prevImg.save(filepath)
-    mainWindow.quit()
-
+    
 
 def resume(event = 0):
-    global button1, button2, button, lmain, cancel
+    global lmain, cancel
 
-    cancel = False
+    if cancel == False:
+        pass
+    else: 
+        cancel = False
+        mainWindow.bind('<Return>', prompt_ok)
+        lmain.after(10, show_frame)
 
-    button1.place_forget()
-    button2.place_forget()
+    
 
-    mainWindow.bind('<Return>', prompt_ok)
-    button.place(bordermode=tk.INSIDE, relx=0.5, rely=0.9, anchor=tk.CENTER, width=300, height=50)
-    lmain.after(10, show_frame)
-
+#change camera function
 def changeCam(event=0, nextCam=-1):
-    global camIndex, cap, fileName
+    global camIndex, cap, fileName #current camera index, capature (cv2), filename to write the camera index
 
     if nextCam == -1:
-        camIndex += 1
+        camIndex += 1 # cycles through camera indices
     else:
         camIndex = nextCam
     del(cap)
-    cap = cv2.VideoCapture(camIndex)
+    cap = cv2.VideoCapture(camIndex) 
 
     #try to get a frame, if it returns nothing
     success, frame = cap.read()
@@ -88,16 +144,29 @@ if not success:
 
 
 mainWindow = tk.Tk(screenName="Camera Capture")
+mainWindow.title('GUI')
 mainWindow.resizable(width=False, height=False)
 mainWindow.bind('<Escape>', lambda e: mainWindow.quit())
-lmain = tk.Label(mainWindow, compound=tk.CENTER, anchor=tk.CENTER, relief=tk.RAISED)
-button = tk.Button(mainWindow, text="Capture", command=prompt_ok)
-button_changeCam = tk.Button(mainWindow, text="Switch Camera", command=changeCam)
 
+lmain = tk.Label(mainWindow, compound=tk.CENTER, anchor=tk.CENTER, relief=tk.RAISED)
+button = tk.Button(mainWindow, text="Start", command=prompt_ok)
 lmain.pack()
 button.place(bordermode=tk.INSIDE, relx=0.5, rely=0.9, anchor=tk.CENTER, width=300, height=50)
 button.focus()
-button_changeCam.place(bordermode=tk.INSIDE, relx=0.85, rely=0.1, anchor=tk.CENTER, width=150, height=50)
+
+stopwatch_label = tk.Label(text='00:00:00', font=('Arial', 60))
+stopwatch_label.pack()
+
+start_button = tk.Button(text='start', height=5, width=8, font=('Arial', 20), command=lambda:[start(), resume()])
+start_button.pack(side=tk.LEFT)
+pause_button = tk.Button(text='pause', height=5, width=8, font=('Arial',20 ), command=lambda:[pause(), prompt_ok()])
+pause_button.pack(side=tk.LEFT)
+reset_button = tk.Button(text='reset', height=5, width=8, font=('Arial', 20), command=reset)
+reset_button.pack(side=tk.LEFT)
+quit_button = tk.Button(text='quit', height=5, width=8, font=('Arial', 20), command=mainWindow.quit)
+quit_button.pack(side=tk.LEFT)
+button_changeCam = tk.Button(text="Switch \n Camera", height = 5, width = 8, font=('Arial',20), command=changeCam)
+button_changeCam.pack(side=tk.LEFT)
 
 def show_frame():
     global cancel, prevImg, button
@@ -112,6 +181,7 @@ def show_frame():
     if not cancel:
         lmain.after(10, show_frame)
 
-show_frame()
-mainWindow.mainloop()
+if __name__ == '__main__':
+    show_frame()
+    mainWindow.mainloop()
 
