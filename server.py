@@ -1,5 +1,5 @@
 import socket
-TCP_IP = '192.168.1.1'
+TCP_IP = '169.254.22.20'
 TCP_PORT = 5005
 BUFFER_SIZE = 20
 
