@@ -35,7 +35,7 @@ def draw(x, y, w, h):
 
 dict_from_csv = {}
 
-path =  '/Users/melvin/Documents/Testing Files for Maze /hardcode .csv'
+path =  'hardcode.csv'
 with open(path, mode='r') as inp:
     reader = csv.reader(inp)
     dict_from_csv = {rows[0]:rows[1] for rows in reader}

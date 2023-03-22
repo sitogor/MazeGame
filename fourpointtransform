@@ -330,9 +330,9 @@ def directions(tot_final,size):
 
 # cv2.imshow('img1',frame) #display the captured image
 # cv2.waitKey()
-frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-plt.imshow(frame)
-plt.show()
+# frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+# plt.imshow(frame)
+# plt.show()
 
 
 ########################################################
@@ -488,6 +488,5 @@ while True:
 
     
 vs.release()
-
 # close all windows
 cv2.destroyAllWindows()
