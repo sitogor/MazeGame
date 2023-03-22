@@ -27,7 +27,8 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
-
+width  = 1200
+height  = 1200 
 
 def draw(x, y, w, h):
    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -35,7 +36,7 @@ def draw(x, y, w, h):
 
 dict_from_csv = {}
 
-path =  'hardcode.csv'
+path =  '/Users/melvin/Documents/Testing Files for Maze /hardcode .csv'
 with open(path, mode='r') as inp:
     reader = csv.reader(inp)
     dict_from_csv = {rows[0]:rows[1] for rows in reader}
@@ -78,8 +79,8 @@ fontColor              = (255,255,255)
 thickness              = 3
 lineType               = 2
 
-width  = 1000
-height  = 1000 
+width  = 1200
+height  = 1200 
 dst_points = np.array([(0, 0),(0, height),(width, height), (width, 0), ], dtype=np.float32)
 min_area = 200
 
@@ -105,7 +106,7 @@ while True:
 	# grab the current frame
     frame = vs.read()
 
-    frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
+    frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
 
 
     #  Convert the frame from BGR to HSV color space
@@ -181,7 +182,7 @@ while True:
     # resize the frame, blur it, and convert it to the HSV
     # color space
     # frame = imutils.resize(frame, width=600)
-    frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
+    frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
 
 
         # Draw the grid 
