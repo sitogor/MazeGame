@@ -31,6 +31,8 @@ greenLower  = 26,103,104
 # greenUpper  = 90,174,133
 myInterval = 80
 Grids =[]
+Centrex = []
+Centrey = []
 centrex = [] #Gives the x range for each grid 
 centrey = [] #Gives the y range for each grid 
 gridrange=[] #Gives the x,y range for each grid 
@@ -45,8 +47,8 @@ lineType               = 2
 ## function to overlay grids and get the gridrange which gives the boundry values for each grid. 
 
 def gridoverlay():
-    global frame 
-    global ny
+    global frame, ny
+    
 
     frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
 
@@ -78,9 +80,9 @@ def gridoverlay():
             centrey.append(y)
 
     for k in range((int(ny)*int(nx))):
-        centrex[k] = [(centrex[k]-(myInterval/2)), (centrex[k]+(myInterval/2))]
-        centrey[k] = [(centrey[k]-(myInterval/2)), (centrey[k]+(myInterval/2))]
-        gridrange.append([centrex[k],centrey[k]])
+        Centrex = [(centrex[k]-(myInterval/2)), (centrex[k]+(myInterval/2))]
+        Centrey = [(centrey[k]-(myInterval/2)), (centrey[k]+(myInterval/2))]
+        gridrange.append([Centrex,Centrey])
 
 
 
