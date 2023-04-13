@@ -122,53 +122,60 @@ def changeCam(event=0, nextCam=-1):
     f.write(str(camIndex))
     f.close()
 
-try:
-    f = open(fileName, 'r')
-    camIndex = int(f.readline())
-except:
-    camIndex = 0
+def get_cam_index():
+    try:
+        f = open(fileName, 'r')
+        camIndex = int(f.readline())
+    except:
+        camIndex = 0
+    return camIndex
 
-cap = cv2.VideoCapture(camIndex)
-capWidth = cap.get(3)
-capHeight = cap.get(4)
+def start_capture():
+    global cap
+    cap = cv2.VideoCapture(get_cam_index())
+    capWidth = cap.get(3)
+    capHeight = cap.get(4)
 
-success, frame = cap.read()
-if not success:
-    if camIndex == 0:
-        print("Error, No webcam found!")
-        sys.exit(1)
-    else:
-        changeCam(nextCam=0)
-        success, frame = cap.read()
-        if not success:
+    success, frame = cap.read()
+
+    if not success:
+        if camIndex == 0:
             print("Error, No webcam found!")
             sys.exit(1)
+        else:
+            changeCam(nextCam=0)
+            success, frame = cap.read()
+            if not success:
+                print("Error, No webcam found!")
+                sys.exit(1)
 
+def set_properties():
+    global mainWindow, stopwatch_label, lmain 
 
-mainWindow = tk.Tk(screenName="Camera Capture")
-mainWindow.title('GUI')
-mainWindow.resizable(width=False, height=False)
-mainWindow.bind('<Escape>', lambda e: mainWindow.quit())
+    mainWindow = tk.Tk(screenName="Camera Capture")
+    mainWindow.title('GUI')
+    mainWindow.resizable(width=False, height=False)
+    mainWindow.bind('<Escape>', lambda e: mainWindow.quit())
 
-lmain = tk.Label(mainWindow, compound=tk.CENTER, anchor=tk.CENTER, relief=tk.RAISED)
-button = tk.Button(mainWindow, text="Start", command=prompt_ok)
-lmain.pack()
-button.place(bordermode=tk.INSIDE, relx=0.5, rely=0.9, anchor=tk.CENTER, width=300, height=50)
-button.focus()
+    lmain = tk.Label(mainWindow, compound=tk.CENTER, anchor=tk.CENTER, relief=tk.RAISED)
+    button = tk.Button(mainWindow, text="Start", command=prompt_ok)
+    lmain.pack()
+    button.place(bordermode=tk.INSIDE, relx=0.5, rely=0.9, anchor=tk.CENTER, width=300, height=50)
+    button.focus()
 
-stopwatch_label = tk.Label(text='00:00:00', font=('Arial', 60))
-stopwatch_label.pack()
+    stopwatch_label = tk.Label(text='00:00:00', font=('Arial', 60))
+    stopwatch_label.pack()
 
-start_button = tk.Button(text='start', height=5, width=8, font=('Arial', 20), command=lambda:[start(), resume()])
-start_button.pack(side=tk.LEFT)
-pause_button = tk.Button(text='pause', height=5, width=8, font=('Arial',20 ), command=lambda:[pause(), prompt_ok()])
-pause_button.pack(side=tk.LEFT)
-reset_button = tk.Button(text='reset', height=5, width=8, font=('Arial', 20), command=reset)
-reset_button.pack(side=tk.LEFT)
-quit_button = tk.Button(text='quit', height=5, width=8, font=('Arial', 20), command=mainWindow.quit)
-quit_button.pack(side=tk.LEFT)
-button_changeCam = tk.Button(text="Switch \n Camera", height = 5, width = 8, font=('Arial',20), command=changeCam)
-button_changeCam.pack(side=tk.LEFT)
+    start_button = tk.Button(text='start', height=5, width=8, font=('Arial', 20), command=lambda:[start(), resume()])
+    start_button.pack(side=tk.LEFT)
+    pause_button = tk.Button(text='pause', height=5, width=8, font=('Arial',20 ), command=lambda:[pause(), prompt_ok()])
+    pause_button.pack(side=tk.LEFT)
+    reset_button = tk.Button(text='reset', height=5, width=8, font=('Arial', 20), command=reset)
+    reset_button.pack(side=tk.LEFT)
+    quit_button = tk.Button(text='quit', height=5, width=8, font=('Arial', 20), command=mainWindow.quit)
+    quit_button.pack(side=tk.LEFT)
+    button_changeCam = tk.Button(text="Switch \n Camera", height = 5, width = 8, font=('Arial',20), command=changeCam)
+    button_changeCam.pack(side=tk.LEFT)
 
 def show_frame():
     global cancel, prevImg, button
@@ -183,7 +190,9 @@ def show_frame():
     if not cancel:
         lmain.after(10, show_frame)
 
-if __name__ == '__main__':
+def main():
+    start_capture()
+    set_properties()
     show_frame()
     mainWindow.mainloop()
 

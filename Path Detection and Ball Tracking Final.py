@@ -9,10 +9,11 @@ import time
 import matplotlib.ticker as plticker
 import matplotlib.pyplot as plt
 
+'''
 cap = cv2.VideoCapture(0) # video capture source camera (Here webcam of laptop) 
 time.sleep(1)
 ret,frame = cap.read() # return a single frame in variable `frame`
-
+'''
 
 
 lower_red = np.array([0,100,95])
@@ -79,7 +80,7 @@ def gridoverlay():
     for k in range((int(ny)*int(nx))):
         centrex[k] = [(centrex[k]-(myInterval/2)), (centrex[k]+(myInterval/2))]
         centrey[k] = [(centrey[k]-(myInterval/2)), (centrey[k]+(myInterval/2))]
-        gridrange.append([(centrex[k]),centrey[k]])
+        gridrange.append([centrex[k],centrey[k]])
 
 
 
@@ -101,45 +102,49 @@ def grid_detection():
 
 ########### PATH DETECTION 
 
+def plt_calculations():
 
-gridoverlay()       # Apply the grids to the image and obtain the gridrange
+    gridoverlay()       # Apply the grids to the image and obtain the gridrange
 
-hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-# define the range of blue color in HSV color space
-lower_blue = np.array([100, 50, 50])
-upper_blue = np.array([130, 255, 255])
+    # define the range of blue color in HSV color space
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([130, 255, 255])
 
 
-# threshold the image to extract blue regions
-mask = cv2.inRange(hsv, lower_red, upper_red)
+    # threshold the image to extract blue regions
+    mask = cv2.inRange(hsv, lower_red, upper_red)
 
-# apply morphological transformations to remove noise
-kernel = np.ones((5, 5), np.uint8)
-opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+    # apply morphological transformations to remove noise
+    kernel = np.ones((5, 5), np.uint8)
+    opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
 
-# find contours in the binary image
-cnts, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    # find contours in the binary image
+    cnts, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-for cnt in cnts:
-    area = cv2.contourArea(cnt)
-    if area > 100:
-        cv2.drawContours(frame, [cnt], 0, (0, 255, 0), 2)
-        for i in cnt:
-            contourx, contoury = i[0]
-            contour_coord.append([contourx,contoury])
+    for cnt in cnts:
+        area = cv2.contourArea(cnt)
+        if area > 100:
+            cv2.drawContours(frame, [cnt], 0, (0, 255, 0), 2)
+            for i in cnt:
+                contourx, contoury = i[0]
+                contour_coord.append([contourx,contoury])
 
-            grid_detection()
-            Grids.append(grid)
+                grid_detection()
+                Grids.append(grid)
 
-    
+        
 
-Grids = [*set(Grids)]
-Grids.sort()
-print("Path Grids are: ",Grids)    
-print("Number of grids  = ",len(Grids))
+    Grids = [*set(Grids)]
+    Grids.sort()
+    print("Path Grids are: ",Grids)    
+    print("Number of grids  = ",len(Grids))
 
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    plt.imshow(frame)
+    plt.show()
 ### Toms code which needs further correction/hardcoding. 
 
 # start = 18
@@ -252,99 +257,107 @@ print("Number of grids  = ",len(Grids))
 
 # cv2.imshow('img1',frame) #display the captured image
 # cv2.waitKey()
-frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-plt.imshow(frame)
-plt.show()
+
 
 
 ########################################################
 #### BALL DETECTION ############
 
-vs = cv2.VideoCapture(0)
+def start_capture():
+    global vs
+    vs = cv2.VideoCapture(0)
+    
 
 
 # keep looping
-while True:
-    centrex = [] #Gives the x range for each grid 
-    centrey = [] #Gives the y range for each grid 
-    gridrange=[] #Gives the x,y range for each grid 
-    contour_coord = []
-    
-    # grab the current frame
-    ret, frame = vs.read()
+def loop():
+    global frame, contourx, contoury
 
-    
-
-    # handle the frame from VideoCapture or VideoStream
-
-    gridoverlay()
-
-    ### Contour detection ###
-
-    blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-
-    # construct a mask for the color "green", then perform
-    # a series of dilations and erosions to remove any small
-    # blobs left in the mask
-    mask = cv2.inRange(hsv, greenLower, greenUpper)
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-
-    # find contours in the mask and initialize the current
-    # (x, y) center of the ball
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
-    center = None
-
-
-    # only proceed if at least one contour was found
-    if len(cnts) > 0:
-        # find the largest contour in the mask, then use
-        # it to compute the minimum enclosing circle and
-        # centroid
-        c = max(cnts, key=cv2.contourArea)
-        ((x, y), radius) = cv2.minEnclosingCircle(c)
-        M = cv2.moments(c)
-        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+    while True:
+        centrex = [] #Gives the x range for each grid 
+        centrey = [] #Gives the y range for each grid 
+        gridrange=[] #Gives the x,y range for each grid 
+        contour_coord = []
+        
+        # grab the current frame
+        ret, frame = vs.read()
 
         
 
-        # only proceed if the radius meets a minimum size
-        if radius > 5:         ### was originally 15
-            # draw the circle and centroid on the frame,
-            # then update the list of tracked points
-            cv2.circle(frame, (int(x), int(y)), int(radius),
-                (0, 255, 255), 2)
-            cv2.circle(frame, center, 5, (0, 0, 255), -1)
+        # handle the frame from VideoCapture or VideoStream
+
+        gridoverlay()
+
+        ### Contour detection ###
+
+        blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+        # construct a mask for the color "green", then perform
+        # a series of dilations and erosions to remove any small
+        # blobs left in the mask
+        mask = cv2.inRange(hsv, greenLower, greenUpper)
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
+
+        # find contours in the mask and initialize the current
+        # (x, y) center of the ball
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        center = None
 
 
-            contourx, contoury = center 
-            contour_coord.append([contourx,contoury])
+        # only proceed if at least one contour was found
+        if len(cnts) > 0:
+            # find the largest contour in the mask, then use
+            # it to compute the minimum enclosing circle and
+            # centroid
+            c = max(cnts, key=cv2.contourArea)
+            ((x, y), radius) = cv2.minEnclosingCircle(c)
+            M = cv2.moments(c)
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
-            grid_detection()
-            print(grid)
+            
+
+            # only proceed if the radius meets a minimum size
+            if radius > 5:         ### was originally 15
+                # draw the circle and centroid on the frame,
+                # then update the list of tracked points
+                cv2.circle(frame, (int(x), int(y)), int(radius),
+                    (0, 255, 255), 2)
+                cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
 
-        else: #if radius < 50:
-            print("No ball is detected")
-            print("Radius is: ", radius)
+                contourx, contoury = center 
+                contour_coord.append([contourx,contoury])
+
+                grid_detection()
+                print(grid)
 
 
-    # show the frame to our screen
-    cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1) & 0xFF
+            else: #if radius < 50:
+                print("No ball is detected")
+                print("Radius is: ", radius)
+
+
+        # show the frame to our screen
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+        
+
+
+        # if the 'q' key is pressed, stop the loop
+        if key == ord("q"):
+            break
+
     
+def main():
+    start_capture()
+    loop()
+    vs.release()
 
+    # close all windows
+    cv2.destroyAllWindows()
 
-    # if the 'q' key is pressed, stop the loop
-    if key == ord("q"):
-        break
-
-    
-vs.release()
-
-# close all windows
-cv2.destroyAllWindows()
-
+main()
