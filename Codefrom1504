@@ -1,0 +1,500 @@
+# import the necessary packages
+from collections import deque
+import imutils
+from imutils.video import VideoStream
+import numpy as np
+import argparse
+import cv2
+import time
+import matplotlib.ticker as plticker
+import matplotlib.pyplot as plt
+import math
+from skimage.morphology import skeletonize, thin
+
+Dict = {"Grid":[],"Directon":[]}
+
+myInterval = 75
+Grids =[]
+centrex = [] #Gives the x range for each grid 
+Centrex = []
+centrey = [] #Gives the y range for each grid 
+Centrey =[]
+gridrange=[] #Gives the x,y range for each grid 
+contour_coord = []
+font                   = cv2.FONT_HERSHEY_SIMPLEX
+fontScale              = 1
+fontColor              = (255,0,0)
+thickness              = 1
+lineType               = 1
+
+width = 2250
+height = 2250
+## Importing necessary functions: 
+
+def gridoverlay():
+    global frame 
+    global ny
+
+    frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
+
+       # Draw the grid 
+    for i in range(0, frame.shape[0], int(myInterval)):
+        cv2.line(frame, (0, i), (frame.shape[1], i), (0, 255, 0), 1)        ## Horizontal lines
+    for i in range(0, frame.shape[1], int(myInterval)):
+        cv2.line(frame, (i, 0), (i, frame.shape[0]), (0, 255, 0), 1)
+
+    nx = int(frame.shape[0]/myInterval)
+    ny = int(frame.shape[1]/myInterval)
+
+
+    for j in range(ny):
+        y=(myInterval/2+j*myInterval)
+        for i in range(nx):
+            x=(myInterval/2.+float(i)*myInterval)
+            frame = cv2.putText(frame,
+            '{:d}'.format(i+j*nx), 
+            (int(x),int(y)), 
+            font, 
+            fontScale,
+            fontColor,
+            thickness,
+            lineType)
+            
+            # if len(centrex) < (ny*nx):
+            centrex.append(x) 
+            centrey.append(y)
+
+    for k in range((int(ny)*int(nx))):
+        Centrex = [(centrex[k]-(myInterval/2)), (centrex[k]+(myInterval/2))]
+        Centrey = [(centrey[k]-(myInterval/2)), (centrey[k]+(myInterval/2))]
+        gridrange.append([(Centrex),Centrey])
+def grid_detection(): 
+    global grid
+    for s in gridrange:
+        xrange = s[0] 
+        yrange = s[1]
+
+
+        if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
+            grid = gridrange.index(s)
+def grid_detection_for_path(): 
+    # global grid
+    global grid1
+    global grid2
+    for s in gridrange:
+        xrange = s[0] 
+        yrange = s[1]
+
+
+        if current_node[0] >= xrange[0] and current_node[0] <= xrange[1] and current_node[1] >= yrange[0] and current_node[1] <= yrange[1]:
+            grid1 = gridrange.index(s)
+        if next_node[0] >= xrange[0] and next_node[0] <= xrange[1] and next_node[1] >= yrange[0] and next_node[1] <= yrange[1]:
+            grid2 = gridrange.index(s)
+
+        
+def closest_coordinates3(coordinates, reference, n=4):
+    global min_distance
+    global distances
+    global closest_coords
+    global grid_testing
+    global dist_list
+    closest_coords = []
+    grid_testing =[]
+    distances = []
+    dist_list = []
+    for coord in coordinates:
+        distance = math.sqrt((coord[0]-reference[0])**2 + (coord[1]-reference[1])**2)
+        distances.append(distance)
+    for i in range(n):
+        min_distance = min(distances)
+        dist_list.append(min_distance)
+        index = distances.index(min_distance)
+        closest_coords.append(coordinates[index])
+        distances[index] = float('inf')
+    # print(dist_list)
+    # for i in closest_coords: 
+    #     for s in gridrange:
+    #         xrange = s[0] 
+    #         yrange = s[1]
+
+    #         if i[0] >= xrange[0] and i[0] <= xrange[1] and i[1] >= yrange[0] and i[1] <= yrange[1]:
+    #             grid1 = gridrange.index(s)
+    #             grid_testing.append(grid1)
+
+
+    return closest_coords
+    # return grid_testing
+# returns the 3 closest nodes to the reference point which is the current node. 
+# First one will be the current node. The remaining are the closest two nodes. 
+
+def draw(x, y, w, h):
+   cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+
+dst_points = np.array([(0, 0),(0, height),(width, height), (width, 0), ], dtype=np.float32)
+
+
+min_area = 2000
+# Functions 
+
+### adding 4pointtrasnform: 
+
+cap = cv2.VideoCapture(0) # video capture source camera (Here webcam of laptop) 
+time.sleep(1)
+ret,frame = cap.read() # return a single frame in variable `frame`
+
+frame = cv2.resize(frame, (height,width),interpolation=cv2.INTER_AREA)
+
+
+
+
+    #  Convert the frame from BGR to HSV color space
+hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+# Create a mask that only keeps blue pixels
+lower_red = np.array([0,50,50])
+upper_red = np.array([10,255,255])
+red_mask1 = cv2.inRange(hsv, lower_red, upper_red)
+
+lower_red = np.array([170,50,50])
+upper_red = np.array([180,255,255])
+red_mask2 = cv2.inRange(hsv, lower_red, upper_red)
+
+# Combine the masks
+red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+
+# Apply morphology to remove noise and close gaps in the lines
+kernel = np.ones((5,5), np.uint8)
+
+red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
+red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_CLOSE, kernel)
+
+# Find contours (i.e., blue rectangles) in the mask
+contours, hierarchy = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+blue_rectangles_centre = []
+height,width,c = frame.shape
+counter = 0 
+
+
+# Loop through all the contours
+for contour in contours:
+    # Compute the area of the contour
+    area = cv2.contourArea(contour)
+
+    x, y, w, h = cv2.boundingRect(contour) # new 
+
+    # Only consider contours with an area larger than the minimum
+    if area > min_area:
+
+        if x  < width/2 and y < height/2:
+            # Draw a rectangle around the contour on the original frame
+            draw(x, y, w, h)
+            # Compute the center of the rectangle
+            cxTL, cyTL = x + w // 2, y + h // 2
+            counter += 1
+            # Add the center coordinates of the rectangle to the list
+
+            
+        if x  > width/2 and y < height/2:
+            draw(x, y, w, h)
+            cxTR, cyTR = x + w // 2, y + h // 2
+            counter += 1
+            
+        if x  < width/2 and y > height/2:
+            draw(x, y, w, h)
+            cxBL, cyBL = x + w // 2, y + h // 2
+            counter += 1
+            
+        if x  > width/2 and y > height/2:
+            draw(x, y, w, h)
+            cxBR, cyBR = x + w // 2, y + h // 2
+            counter += 1
+
+
+if counter == 4:  
+    blue_rectangles_centre = [(cxTL, cyTL), (cxBL, cyBL), (cxBR, cyBR),(cxTR,cyTR)]
+        
+
+
+if len(blue_rectangles_centre) == 4:
+    # Sort the rectangles by x and y coordinates
+    # blue_rectangles_centre.sort()
+    print(blue_rectangles_centre)
+
+    blue_rectangles_centre = np.array(blue_rectangles_centre, dtype=np.float32)
+    M = cv2.getPerspectiveTransform(blue_rectangles_centre, dst_points)
+    frame = cv2.warpPerspective(frame, M, (width, height))
+
+
+cv2.imshow("Warped", frame)
+cv2.waitKey()
+cv2.destroyAllWindows()
+
+# cv2.imwrite("Maze_image.jpg", frame)
+
+
+gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+blur = cv2.GaussianBlur(gray, (3,3), 0)
+
+# Apply thresholding to obtain a binary image
+# _, binary = cv2.threshold(blur, 127, 255, cv2.THRESH_BINARY)
+
+
+
+binary  = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+
+
+
+# Apply erosion to the binary image
+kernel = np.ones((5, 5), np.uint8)
+# erosion = cv2.erode(binary, kernel, iterations=1)
+
+# cv2.imshow("erosion", erosion)
+# cv2.imshow("BLur", blur)
+# cv2.imshow("binary ", binary)
+
+
+# Find contours on the eroded image
+contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+mask = np.zeros_like(frame)
+
+gridoverlay()     
+
+for cnt in contours:
+    area = int(cv2.contourArea(cnt))
+    # if area > 52000 and area < 55000:   ## for the square image of 1500,1500 
+    # if area > 29000 and area <31000:  ## for without any resizing 
+    # if area > 45000 and area < 49000:   ## for the square image of 1400,1400 
+    # if area > 100000 and area < 120000:
+    if area > 200e3 and area < 500e3:
+        print(area)
+        cv2.drawContours(frame, cnt, -1,(0,255,0),3)
+        cv2.putText(frame, '{:d}'.format(area), cnt[0][0], font, fontScale, fontColor )
+        cv2.drawContours(mask, [cnt], -1, (255,255,255), -1)
+        for i in cnt:
+            contourx, contoury = i[0]
+            grid_detection()
+            Grids.append(grid)
+
+
+kernel = np.ones((5, 5), np.uint8)
+# skeleton = cv2.erode(mask, kernel, iterations = 1) 
+# mask = cv2.bitwise_not(skeleton)
+mask = cv2.bitwise_not(mask)
+
+cv2.imshow("mask", mask)
+cv2.waitKey()
+cv2.destroyAllWindows()
+
+
+## Check if the mask is appropriate, if not change the iteration. 
+
+## 2. Detecting the contours on the mask. This step can perhaps be elimiaed. 
+
+# frame = cv2.resize(mask, (width,height),interpolation=cv2.INTER_AREA)
+
+
+# gray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+# ret, thresh = cv2.threshold(gray, 127, 255, 0)
+
+# # find contours in the binary image
+# cnts, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+# gridoverlay()     
+  # Apply the grids to the image and obtain the gridrange
+
+cv2.imshow("frame with overlay", frame)
+cv2.waitKey()
+cv2.destroyAllWindows()
+
+
+# for cnt in cnts:
+#     area = cv2.contourArea(cnt)
+#     # if area > 10000 and area < 1957201.0:
+#     if area < 130000:
+#         print("2nd area ", area)
+#         cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 5)
+#         for i in cnt:
+#             contourx, contoury = i[0]
+#             contour_coord.append([contourx,contoury])
+#             grid_detection()
+#             Grids.append(grid)
+
+
+
+Grids = [*set(Grids)]
+# Grids.sort()
+print("Path Grids are: ",Grids)    
+print("Number of grids  = ",len(Grids))
+
+Center = []
+Center_trial = []
+nodes_visted = []
+error_nodes = []
+
+for i in Grids:
+    cv2.circle(frame, (int(centrex[i]),int(centrey[i])), 5, 255,5)
+    Center.append((int(centrex[i]),int(centrey[i])))
+
+# for  k in range(0, len(Center), 4):
+#     Center_trial.append(Center[k])
+
+
+# for k in Center_trial: 
+#     cv2.circle(frame, (k[0],k[1]),5, (0,255,0),5)
+## doesnt work so delete .
+
+
+
+Center_copy = Center.copy()     #### Needs to be after Center has been created thus dont change location. 
+
+
+print(closest_coordinates3(Center_copy,((int(centrex[339]),int(centrey[339]))), 3))
+error = 0 
+
+
+starting_grid = 73
+ending_grid = 852
+
+# current_node = ((int(centrex[starting_grid]),int(centrey[starting_grid])))
+# ending_node  = ((int(centrex[ending_grid]),int(centrey[ending_grid])))
+
+# for i in range(len(Center)):
+#     closest = closest_coordinates3(Center, current_node, 2)
+    
+#     next_node = closest[1]
+#     deltax = next_node[0] - current_node[0]
+#     deltay = next_node[1] - current_node [1]
+#     grid_detection_for_path()
+#     if deltax != 0 and deltay != 0:
+#         error_nodes.append(grid1) 
+#         Center_copy.remove((int(centrex[grid1]),int(centrey[grid1])))
+#     try: 
+#         Center.remove(closest[0])
+#     except: 
+#         pass
+#     current_node = next_node
+#     if current_node  == ending_node:
+#         break 
+
+
+current_node = ((int(centrex[starting_grid]),int(centrey[starting_grid])))
+ending_node  = ((int(centrex[ending_grid]),int(centrey[ending_grid])))
+for i in range(len(Center_copy)):
+    closest = closest_coordinates3(Center_copy, current_node, 4)
+    grid_testing =[]
+    for i in closest_coords: 
+        for s in gridrange:
+            xrange = s[0] 
+            yrange = s[1]
+
+            if i[0] >= xrange[0] and i[0] <= xrange[1] and i[1] >= yrange[0] and i[1] <= yrange[1]:
+                grid1 = gridrange.index(s)
+                grid_testing.append(grid1)
+    print(grid_testing)
+    print(dist_list)
+    direction_list = ["nothing"]                 ### List used to store the sub directoons when there nodes that are 75.o apart. 
+    if dist_list[1] == 75.0 and dist_list[2] == 75.0 and dist_list[3] == 75.0: 
+        for i in range(1,4):
+            next_potential_node = closest[i]
+            deltax = next_potential_node[0] - current_node[0]
+            deltay = next_potential_node[1] - current_node [1]
+            if deltax > 0: 
+                sub_direction = "Right"
+            elif deltax < 0:
+                sub_direction = "Left"
+            if deltay > 0:
+                sub_direction = "Down"
+            elif deltay < 0: 
+                sub_direction = "Up"
+
+            direction_list.append(sub_direction)
+
+        if len(direction_list) == 4: 
+            print("marker point")
+            print("directions are: ", direction_list)
+            index = direction_list.index(direction)
+            next_node = closest[index]
+            print("chosen next node is: ", next_node)
+
+        
+    
+    if dist_list[1] == 75.0 and dist_list[2] == 75.0: 
+        for i in range(1,3):
+            next_potential_node = closest[i]
+            deltax = next_potential_node[0] - current_node[0]
+            deltay = next_potential_node[1] - current_node [1]
+            if deltax > 0: 
+                sub_direction = "Right"
+            elif deltax < 0:
+                sub_direction = "Left"
+            if deltay > 0:
+                sub_direction = "Down"
+            elif deltay < 0: 
+                sub_direction = "Up"
+
+            direction_list.append(sub_direction)
+
+        if len(direction_list) == 3: 
+            print("marker point")
+            print("Existing direction is: ", direction)
+            print("directions are: ", direction_list)
+            if direction in direction_list: 
+                index = direction_list.index(direction)
+                next_node = closest[index]
+                print("chosen next node is: ", direction_list[index])
+            else:
+                print("Problematic node with direction on either side")
+                LA_center_list1 = Center_copy.copy()
+                LA_Center_list2 = Center_copy.copy()
+
+
+            
+
+    else:
+        next_node = closest[1]
+    # if dist_list[2] == 75.0:
+    #     next_node = closest[2]
+    # else:
+    # next_node = closest[1]
+    deltax = next_node[0] - current_node[0]
+    deltay = next_node[1] - current_node [1]
+    grid_detection_for_path()
+    nodes_visted.append(grid1)
+    # if min_distance > 75.0:
+    #     print("Min distance exceeded!!")
+    #     print("Broken at", grid1, " going to ", grid2)
+    #     break 
+    if deltax != 0 and deltay != 0:
+        print("Error", grid1)
+        error += 1
+    if deltax > 0: 
+        direction = "Right"
+    elif deltax < 0:
+        direction = "Left"
+    if deltay > 0:
+        direction = "Down"
+    elif deltay < 0: 
+        direction = "Up"
+
+    # dict["Grid"].append(grid1)
+    # dict["Direction"].append(direction)
+    print(grid1, direction, "to ", grid2 )
+    Center_copy.remove(closest[0])
+    current_node = next_node
+    if current_node  == ending_node:
+        print("Ending node: ", grid2, "reached.")
+        break 
+
+print(error)
+
+# print(dict)
+# cv2.imshow("frame", frame)
+# cv2.waitKey()
+# cv2.destroyAllWindows()
+
+plt.imshow(frame)
+plt.show()
+
+
