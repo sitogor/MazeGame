@@ -196,3 +196,5 @@ def main():
     show_frame()
     mainWindow.mainloop()
 
+if __name__ == "__main__":
+    main()

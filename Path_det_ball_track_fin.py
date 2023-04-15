@@ -362,4 +362,5 @@ def main():
     # close all windows
     cv2.destroyAllWindows()
 
-main()
+if __name__ == "__main__":
+    main()
