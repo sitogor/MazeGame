@@ -1,0 +1,11 @@
+import math
+k1 = 50
+servo_middle = 1545
+k2 = 83
+servo2_middle = 917
+def control(ball_pos, node):
+    x_dir = node[0]-ball_pos[0]
+    y_dir = node[1]-ball_pos[1]
+    theta = math.tan(y_dir/x_dir)
+    duty_cycle = (servo_middle + k1*math.cos(theta),servo2_middle + k2*math.sin(theta))
+    return duty_cycle
