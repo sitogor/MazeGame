@@ -27,8 +27,11 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
-width  = 1200
-height  = 1200 
+# width  = 1200
+# height  = 1200 
+
+width = 2250
+height = 2250
 
 def draw(x, y, w, h):
    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -108,59 +111,83 @@ while True:
 
     frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
 
-
     #  Convert the frame from BGR to HSV color space
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Create a mask that only keeps blue pixels
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
-    # Apply a series of morphological transformations to the mask to remove noise and fill holes
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    lower_red = np.array([0,50,50])
+    upper_red = np.array([10,255,255])
+    red_mask1 = cv2.inRange(hsv, lower_red, upper_red)
+
+    lower_red = np.array([170,50,50])
+    upper_red = np.array([180,255,255])
+    red_mask2 = cv2.inRange(hsv, lower_red, upper_red)
+
+    # Combine the masks
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+
+    # Apply morphology to remove noise and close gaps in the lines
+    kernel = np.ones((5,5), np.uint8)
+
+    red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
+    red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_CLOSE, kernel)
+
+    # Create a mask that only keeps blue pixels
+    # mask = cv2.inRange(hsv, lower_red, upper_red)
+
+    cv2.imshow("mask", red_mask)
+
+
 
     # Find contours (i.e., blue rectangles) in the mask
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     blue_rectangles_centre = []
     height,width,c = frame.shape
     counter = 0 
-
+    
 
     # Loop through all the contours
     for contour in contours:
         # Compute the area of the contour
         area = cv2.contourArea(contour)
-
         x, y, w, h = cv2.boundingRect(contour) # new 
+        # print("area is ", area)
 
         # Only consider contours with an area larger than the minimum
         if area > min_area:
 
             if x  < width/2 and y < height/2:
+                # x, y, w, h = cv2.boundingRect(contour)
                 # Draw a rectangle around the contour on the original frame
                 draw(x, y, w, h)
                 # Compute the center of the rectangle
                 cxTL, cyTL = x + w // 2, y + h // 2
                 counter += 1
                 # Add the center coordinates of the rectangle to the list
+                # blue_rectangles_centre.append((cxTL, cyTL))
 
                 
             if x  > width/2 and y < height/2:
+                # x, y, w, h = cv2.boundingRect(contour)
                 draw(x, y, w, h)
                 cxTR, cyTR = x + w // 2, y + h // 2
                 counter += 1
+                # blue_rectangles_centre.append((cxTR, cyTR))
                 
             if x  < width/2 and y > height/2:
+                # x, y, w, h = cv2.boundingRect(contour)
                 draw(x, y, w, h)
                 cxBL, cyBL = x + w // 2, y + h // 2
                 counter += 1
+                # blue_rectangles_centre.append((cxBL, cyBL))
                 
             if x  > width/2 and y > height/2:
+                # x, y, w, h = cv2.boundingRect(contour)
                 draw(x, y, w, h)
                 cxBR, cyBR = x + w // 2, y + h // 2
                 counter += 1
-
+                # blue_rectangles_centre.append((cxBR, cyBR))
 
     if counter == 4:  
         blue_rectangles_centre = [(cxTL, cyTL), (cxBL, cyBL), (cxBR, cyBR),(cxTR,cyTR)]
@@ -168,7 +195,9 @@ while True:
 
 
     if len(blue_rectangles_centre) == 4:
-
+            # Sort the rectangles by x and y coordinates
+        # blue_rectangles_centre.sort()
+        # print(blue_rectangles_centre)
 
         blue_rectangles_centre = np.array(blue_rectangles_centre, dtype=np.float32)
         M = cv2.getPerspectiveTransform(blue_rectangles_centre, dst_points)
@@ -278,15 +307,18 @@ while True:
                     print(grid)
                     try:
                         x=dict_from_csv[str(grid)]
-                        print(x)
+                        # print(grid)
                         Tx.send(x.encode())
                     # data = s.recv(BUFFER_SIZE)
                     # s.close()
 
                     # print("recieved data:", data)
                         Grids.append(grid)
-                    except:
-                        Tx.send(b'nan'.encode())
+                    except KeyError:
+                        print('right')
+                        Tx.send('r'.encode())
+
+                        Grids.append(grid)
                     # counter += 1 
                     # print(counter)
 
