@@ -27,23 +27,12 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
-# width  = 1200
-# height  = 1200 
-
-width = 2250
-height = 2250
-
-def draw(x, y, w, h):
-   cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
 
 dict_from_csv = {}
 
-path =  'hardcode.csv'
-with open(path, mode='r') as inp:
+with open('route_csv_formatted(final).csv', mode='r') as inp:
     reader = csv.reader(inp)
     dict_from_csv = {rows[0]:rows[1] for rows in reader}
-    
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 
@@ -70,10 +59,11 @@ upper_red = np.array([7,255,255])
 # greenLower = 20,100,90
 
 
-myInterval = 80
+myInterval = 100.
 
+vs = []
 
-Grids =[]
+Grids = []
 
 
 font                   = cv2.FONT_HERSHEY_SIMPLEX
@@ -81,11 +71,6 @@ fontScale              = 1
 fontColor              = (255,255,255)
 thickness              = 3
 lineType               = 2
-
-width  = 1200
-height  = 1200 
-dst_points = np.array([(0, 0),(0, height),(width, height), (width, 0), ], dtype=np.float32)
-min_area = 200
 
 # if a video path was not supplied, grab the reference
 # to the webcam
@@ -100,7 +85,7 @@ vs = VideoStream(src=0).start()
 counter = 0 
 
 # keep looping
-while True:
+def frame_loop(vs):
     centrex = [] #Gives the x range for each grid 
     centrey = [] #Gives the y range for each grid 
     gridrange=[] #Gives the x,y range for each grid 
@@ -108,100 +93,6 @@ while True:
     
 	# grab the current frame
     frame = vs.read()
-
-    frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
-
-    #  Convert the frame from BGR to HSV color space
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-
-
-    lower_red = np.array([0,50,50])
-    upper_red = np.array([10,255,255])
-    red_mask1 = cv2.inRange(hsv, lower_red, upper_red)
-
-    lower_red = np.array([170,50,50])
-    upper_red = np.array([180,255,255])
-    red_mask2 = cv2.inRange(hsv, lower_red, upper_red)
-
-    # Combine the masks
-    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
-
-    # Apply morphology to remove noise and close gaps in the lines
-    kernel = np.ones((5,5), np.uint8)
-
-    red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
-    red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_CLOSE, kernel)
-
-    # Create a mask that only keeps blue pixels
-    # mask = cv2.inRange(hsv, lower_red, upper_red)
-
-    cv2.imshow("mask", red_mask)
-
-
-
-    # Find contours (i.e., blue rectangles) in the mask
-    contours, hierarchy = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    blue_rectangles_centre = []
-    height,width,c = frame.shape
-    counter = 0 
-    
-
-    # Loop through all the contours
-    for contour in contours:
-        # Compute the area of the contour
-        area = cv2.contourArea(contour)
-        x, y, w, h = cv2.boundingRect(contour) # new 
-        # print("area is ", area)
-
-        # Only consider contours with an area larger than the minimum
-        if area > min_area:
-
-            if x  < width/2 and y < height/2:
-                # x, y, w, h = cv2.boundingRect(contour)
-                # Draw a rectangle around the contour on the original frame
-                draw(x, y, w, h)
-                # Compute the center of the rectangle
-                cxTL, cyTL = x + w // 2, y + h // 2
-                counter += 1
-                # Add the center coordinates of the rectangle to the list
-                # blue_rectangles_centre.append((cxTL, cyTL))
-
-                
-            if x  > width/2 and y < height/2:
-                # x, y, w, h = cv2.boundingRect(contour)
-                draw(x, y, w, h)
-                cxTR, cyTR = x + w // 2, y + h // 2
-                counter += 1
-                # blue_rectangles_centre.append((cxTR, cyTR))
-                
-            if x  < width/2 and y > height/2:
-                # x, y, w, h = cv2.boundingRect(contour)
-                draw(x, y, w, h)
-                cxBL, cyBL = x + w // 2, y + h // 2
-                counter += 1
-                # blue_rectangles_centre.append((cxBL, cyBL))
-                
-            if x  > width/2 and y > height/2:
-                # x, y, w, h = cv2.boundingRect(contour)
-                draw(x, y, w, h)
-                cxBR, cyBR = x + w // 2, y + h // 2
-                counter += 1
-                # blue_rectangles_centre.append((cxBR, cyBR))
-
-    if counter == 4:  
-        blue_rectangles_centre = [(cxTL, cyTL), (cxBL, cyBL), (cxBR, cyBR),(cxTR,cyTR)]
-            
-
-
-    if len(blue_rectangles_centre) == 4:
-            # Sort the rectangles by x and y coordinates
-        # blue_rectangles_centre.sort()
-        # print(blue_rectangles_centre)
-
-        blue_rectangles_centre = np.array(blue_rectangles_centre, dtype=np.float32)
-        M = cv2.getPerspectiveTransform(blue_rectangles_centre, dst_points)
-        frame = cv2.warpPerspective(frame, M, (width, height))
     
 
 	# handle the frame from VideoCapture or VideoStream
@@ -211,7 +102,7 @@ while True:
     # resize the frame, blur it, and convert it to the HSV
     # color space
     # frame = imutils.resize(frame, width=600)
-    frame = cv2.resize(frame, (width,height),interpolation=cv2.INTER_AREA)
+    frame = cv2.resize(frame, (1000,1000),interpolation=cv2.INTER_AREA)
 
 
         # Draw the grid 
@@ -301,24 +192,23 @@ while True:
             for s in gridrange:
                 xrange = s[0] 
                 yrange = s[1]
+                return_dic = {'r':'l','l':'r','u':'d','d':'u'}
 
                 if contourx >= xrange[0] and contourx <= xrange[1] and contoury >= yrange[0] and contoury <= yrange[1]:
                     grid = gridrange.index(s)
                     print(grid)
                     try:
                         x=dict_from_csv[str(grid)]
-                        # print(grid)
+                        print(x)
                         Tx.send(x.encode())
                     # data = s.recv(BUFFER_SIZE)
                     # s.close()
 
                     # print("recieved data:", data)
                         Grids.append(grid)
-                    except KeyError:
-                        print('right')
-                        Tx.send('r'.encode())
-
-                        Grids.append(grid)
+                    except:
+                        return_direc = return_dic[x]
+                        Tx.send(return_direc.encode())
                     # counter += 1 
                     # print(counter)
 
