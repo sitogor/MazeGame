@@ -283,7 +283,7 @@ def loop():
         
         # grab the current frame
         ret, frame = vs.read()
-
+        
         
 
         # handle the frame from VideoCapture or VideoStream

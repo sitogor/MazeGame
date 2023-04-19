@@ -1,11 +1,29 @@
 import socket
-TCP_IP = '169.254.22.20'
-TCP_PORT = 5005
-MESSAGE = "Hello, world!"
 
+import csv
+from collections import deque
+import imutils
+from imutils.video import VideoStream
+import numpy as np
+import argparse
+import cv2
+import time
+import matplotlib.pyplot as plt
 
-Tx=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-Tx.connect((TCP_IP, TCP_PORT))
+class Server:
+    HOST = '169.254.22.20'
+    PORT = 5005
+
+    def __init__(self) -> None:
+        
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Tx is now self.sock
+        self.sock.bind((self.HOST, self.PORT))  
+        pass
+
+    def transmit(self):
+        Tx=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        Tx.connect((self.HOST, self.PORT))
+
 
 # s.send(MESSAGE.encode())
 
@@ -17,15 +35,7 @@ Tx.connect((TCP_IP, TCP_PORT))
 
 # import the necessary packages
 
-import csv
-from collections import deque
-import imutils
-from imutils.video import VideoStream
-import numpy as np
-import argparse
-import cv2
-import time
-import matplotlib.pyplot as plt
+
 
 width  = 1200
 height  = 1200 
@@ -320,7 +330,9 @@ else:
     vs.release()
 
 # close all windows
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    comms = communication('169.254.22.20', 5005, "Hello, world!" )
+    cv2.destroyAllWindows()
 
 # Grids = [*set(Grids)]
 # Grids.sort()
