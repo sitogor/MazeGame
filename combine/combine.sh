@@ -1,0 +1,1 @@
+python time.py & python main.py
